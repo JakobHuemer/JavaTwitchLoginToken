@@ -1,6 +1,7 @@
-package at.jakobhuemer.sociallogintestspring.models;
+package at.jakobhuemer.sociallogintestspring.models.user;
 
 import at.jakobhuemer.sociallogintestspring.dto.UserDTO;
+//import at.jakobhuemer.sociallogintestspring.models.post.Post;
 import at.jakobhuemer.sociallogintestspring.settings.Settings;
 import jakarta.persistence.*;
 import lombok.*;
@@ -17,10 +18,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,6 +40,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
+@Builder(access = AccessLevel.PUBLIC)
 public class User {
 
     @Id
@@ -58,8 +56,7 @@ public class User {
     private Long id;
 
     @Column(
-            name = "twitch_id",
-            columnDefinition = "INT"
+            name = "twitch_id"
     )
     private Long twitchId;
 
@@ -68,12 +65,6 @@ public class User {
             columnDefinition = "TEXT"
     )
     private String token;
-
-    @Column(
-            name = "twitch_code",
-            columnDefinition = "TEXT"
-    )
-    private String twitchCode;
 
     @Column(
             name = "refresh_token",
@@ -89,28 +80,27 @@ public class User {
 
     @Column(
             name = "twitch_login",
-            columnDefinition = "TEXT",
-            nullable = false
+            columnDefinition = "TEXT"
     )
     private String twitchLogin;
 
     @Column(
-            name = "auth_level",
-            columnDefinition = "INT",
-            nullable = true
+            name = "auth_level"
     )
     private AuthorityLevel authorityLevel = AuthorityLevel.USER;
 
+    @Column(
+            name = "access_scopes"
+    )
+    private List<AccessScope> accessScopes;
 
-    public User( User.Builder builder ) {
-        this.token = builder.token;
-        this.twitchCode = builder.twitchCode;
-        this.refreshToken = builder.refreshToken;
-        this.accessToken = builder.accessToken;
-        this.twitchLogin = builder.twitchLogin;
-        this.authorityLevel = builder.authorityLevel;
-        this.twitchId = builder.twitchId;
-    }
+//    @OneToMany(
+//            mappedBy = "author",
+//            cascade = CascadeType.ALL,
+//            orphanRemoval = true
+//    )
+//    // q: what does mappedBy do?
+//    private List<Post> postList;
 
 
     /**
@@ -201,15 +191,7 @@ public class User {
         Object[] accessData = new String[ 3 ];
 
         if( this.refreshToken == null ) {
-            if( !this.twitchCode.startsWith( "old: " ) ) {
-                accessData = User.processCode( this.twitchCode );
-                this.twitchLogin = (String) accessData[ 0 ];
-                this.accessToken = (String) accessData[ 1 ];
-                this.refreshToken = (String) accessData[ 2 ];
-            } else {
-                System.out.println( "NO REFRESH TOKEN SET!" );
-                throw new RuntimeException();
-            }
+            throw new RuntimeException( "refreshToken is null" );
         }
 
         HttpClient httpClient = HttpClientBuilder.create().build();
@@ -250,96 +232,7 @@ public class User {
     }
 
     public UserDTO toDTO() {
-        return new UserDTO( this.id, this.twitchId, this.twitchLogin, this.authorityLevel );
+        return new UserDTO( this.id, this.twitchId, this.twitchLogin, this.authorityLevel, this.accessScopes );
     }
-
-    // Builder
-    public static class Builder {
-
-        private String twitchLogin = null;
-        private Long twitchId = null;
-        private String twitchCode = null;
-        private String refreshToken = null;
-        private String accessToken = null;
-        private String token = null;
-        private AuthorityLevel authorityLevel = AuthorityLevel.USER;
-
-        public Builder() {
-
-        }
-
-        public Builder setAuthorityLevel( AuthorityLevel authorityLevel ) {
-            this.authorityLevel = authorityLevel;
-            return this;
-        }
-
-        public Builder setTwitchId( Long twitchId ) {
-            this.twitchId = twitchId;
-            return this;
-        }
-
-        public Builder setAuthorityLevel( String authorityString ) {
-            this.authorityLevel = switch( authorityString.toUpperCase() ) {
-                case "MOD" -> AuthorityLevel.MOD;
-                case "ADMIN" -> AuthorityLevel.ADMIN;
-                default -> AuthorityLevel.USER;
-            };
-            return this;
-        }
-
-
-        public Builder setTwitchLogin( String twitchLogin ) {
-            this.twitchLogin = twitchLogin;
-            return this;
-        }
-
-        public Builder setTwitchCode( String twitchCode ) {
-            this.twitchCode = twitchCode;
-            return this;
-        }
-
-        public Builder setRefreshToken( String refreshToken ) {
-            this.refreshToken = refreshToken;
-            return this;
-        }
-
-        public Builder setToken( String token ) {
-            this.token = token;
-            return this;
-        }
-
-        public Builder setAccessToken( String accessToken ) {
-            this.accessToken = accessToken;
-            return this;
-        }
-
-
-        public User build() {
-            return new User( this );
-        }
-    }
-
-    public static enum AuthorityLevel {
-        RESTRICTED(-1), USER( 0 ), MOD( 1 ), ADMIN( 2 );
-
-        private final int level;
-
-        AuthorityLevel( int level ) {
-            this.level = level;
-        }
-
-        public int getLevel() {
-            return level;
-        }
-    }
-
-
-    @Retention( RetentionPolicy.RUNTIME )
-    @Target( ElementType.METHOD )
-    public @interface AuthLevelRequired {
-        AuthorityLevel value();
-
-    }
-
 
 }

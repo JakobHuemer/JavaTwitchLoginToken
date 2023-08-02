@@ -1,7 +1,7 @@
-server:
+jserver:
   port: 9090
-  error:
-    include-message: always
+#  error:
+#    include-message: always
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/twitch_login
@@ -9,7 +9,9 @@ spring:
     username: postgres
   jpa:
     hibernate:
-      ddl-auto: create-drop
+#      ddl-auto: create
+      ddl-auto: validate
+#      ddl-auto: create-drop
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect

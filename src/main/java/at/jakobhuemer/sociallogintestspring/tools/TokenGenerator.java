@@ -38,4 +38,5 @@ public class TokenGenerator {
     public void load( String[] tokens ) {
         Collections.addAll( tokenList, tokens );
     }
+
 }
